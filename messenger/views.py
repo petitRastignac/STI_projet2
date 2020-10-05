@@ -2,6 +2,7 @@ from flask import render_template, request, flash, redirect
 
 from messenger import APP
 from messenger.models import User
+from messenger.security import check_pw, hash_pw
 
 @APP.route('/')
 def index():
@@ -37,12 +38,29 @@ def changePassword():
 
 @APP.route('/login', methods=['GET', 'POST'])
 def login():
+    # handle incoming form
     if request.method == 'POST':
-        # TODO process form
-        pass
+        # retrieve form data
+        args = {
+            'username': request.form.get('username', type=str),
+            'password': request.form.get('password', type=str),
+        }
+
+        # get matching user
+        user = User.select(args['username'], False)
+
+        # check for valid data and no user conflicts
+        if any(x == None for x in args):
+            flash('All fields are required', 'alert-danger')
+        elif not (user and check_pw(args['password'], user.password)):
+            flash('Bad credentials', 'alert-danger')
+        else:
+            flash('Successfully logged in', 'alert-success')
+            return redirect('/')
 
     return render_template(
-        'login.html'
+        'login.html',
+        title='Log in'
     )
 
 @APP.route('/signup', methods=['GET', 'POST'])
@@ -69,7 +87,7 @@ def signup():
             # create new account and redirect to login page
             User.insert(
                 args['firstname'], args['lastname'],
-                args['username'], args['password']
+                args['username'], hash_pw(args['password'])
             )
             flash('Account created successfully', 'alert-success')
             return redirect('/login')
