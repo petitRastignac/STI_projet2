@@ -14,6 +14,12 @@ def inbox():
         'inbox.html'
     )
 
+@APP.route('/new')
+def new():
+    return render_template(
+        'new.html'
+    )
+
 @APP.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
