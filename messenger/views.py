@@ -20,6 +20,13 @@ def new():
         'new.html'
     )
 
+@APP.route('/changePassword')
+def changePassword():
+    # TODO condition si déjà login->changePassword sinon->login
+    return render_template(
+        'changePassword.html'
+    )
+
 @APP.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
