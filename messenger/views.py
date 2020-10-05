@@ -20,6 +20,13 @@ def new():
         'new.html'
     )
 
+@APP.route('/manageUser')
+def manageUser():
+    # TODO only show if admin
+    return render_template(
+        'manageUser.html'
+    )
+
 @APP.route('/changePassword')
 def changePassword():
     # TODO condition si déjà login->changePassword sinon->login
