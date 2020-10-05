@@ -1,10 +1,13 @@
-FROM python:3.8-slim-buster
+FROM python:3.8-buster
 
-RUN python3 -m venv /opt/venv
+COPY . /app
+
+WORKDIR /app
 
 # Install dependencies:
-RUN . venv/bin/activate && pip install -Ue
+RUN apt update && apt install build-essential
+RUN pip install -U setuptools wheel
+RUN pip install -U .[staging]
 
 # Run the application:
-COPY 
-CMD 
+CMD uwsgi --http :9090 --module messenger:APP
