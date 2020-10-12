@@ -4,9 +4,31 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col col-md-8 offset-md-2 mt-2">
-            inbox
+            <h2><b>{{ title }}</b></h2>
         </div>
     </div>
 </div>
+<table class="table" id="">
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Expéditeur</th>
+            <th scope="col">Sujet</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th style="width: 25%" scope="row">Date1</th>
+            <th style="width: 25%">Expéditeur1</th>
+            <th style="width: 25%">Sujet1</th>
+            <th style="width: 25%" class="btn-group">
+                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Répondre</a>
+                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Supprimer</a>
+                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Lire</a>
+            </th>
+        </tr>
+    </tbody>
+</table>
 
 {% endblock %}
