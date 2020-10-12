@@ -4,6 +4,7 @@
 
 - [Introduction](#introduction)
 - [Usage](#usage)
+- [Authors](#authors)
 
 ## Introduction
 
