@@ -89,6 +89,13 @@ Messenger is now available at [http://localhost:9090](http://localhost:9090).
 
 Killing the stack requires a double `Ctrl+C`.
 
+You may use Adminer to access the database using a convenient GUI available at [http://localhost:8080](http://localhost:8080). Use the following credentials:
+
+- Server: `sti_db`
+- Username: `sti`
+- Password: `stipass`
+- Database: `sti`
+
 ## Authors
 
 Messenger is made by:
