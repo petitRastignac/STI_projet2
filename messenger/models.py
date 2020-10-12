@@ -162,6 +162,11 @@ class User(Model):
         """
         super().delete('id', user_id)
 
+    @classmethod
+    def from_session(cls, session_id: str):
+        session = Session.select(session_id)
+        return User.select(session.user_id)
+
 class Session(Model):
     """
     Database model representing a user session

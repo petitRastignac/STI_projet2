@@ -1,5 +1,7 @@
 import json, base64, hmac
 
+from flask import request
+
 from messenger import APP
 
 # TODO handle malformed jwt
@@ -87,3 +89,6 @@ def b64unpack(data: str) -> dict:
             data
         ).decode(ENCODING)
     )
+
+def get_current_jwt():
+    return jwt_decode(request.cookies.get('auth'))

@@ -6,12 +6,19 @@ from messenger import APP
 from messenger.models import User, Session
 from messenger.security import check_pw, hash_pw, gen_rand_string
 from messenger.decorators import is_logged_in, is_admin
-from messenger.jwt import jwt_decode, jwt_encode
+from messenger.jwt import jwt_decode, jwt_encode, get_current_jwt
+
+def current_user():
+    return User.from_session(get_current_jwt()['session'])
 
 @APP.route('/')
+@is_logged_in
 def index():
+    user = current_user()
+
     return render_template(
-        'index.html'
+        'index.html',
+        firstname=user.firstname
     )
 
 @APP.route('/inbox')
