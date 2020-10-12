@@ -1,4 +1,5 @@
 from messenger import DB
+from messenger.security import gen_rand_string
 
 class Model(object):
     """
@@ -8,18 +9,30 @@ class Model(object):
     database server
     """
 
+    TEXT_MAX_LEN = 200
+
     @classmethod
-    def create_table(cls, columns_stmt: str) -> None:
+    def create_table(cls, columns_stmt: str, drop=False) -> None:
         """
         Execute a `CREATE TABLE` command using the calling classe's
         `__tablename__` table with the supplied columns statement
 
+        If `drop` is true, a `DROP TABLE IF EXISTS` command will
+        be issued beforehand.
+
         :param columns_stmt: SQL columns declaration
         """
+        if drop:
+            DB.engine.execute('DROP TABLE IF EXISTS {}'.format(
+                cls.__tablename__
+            ))
+
         DB.engine.execute('CREATE TABLE {} ({})'.format(
             cls.__tablename__,
-            columns_stmt
+            columns_stmt.format(TEXT_LEN=Model.TEXT_MAX_LEN),
         ))
+
+        print(columns_stmt.format(TEXT_LEN=Model.TEXT_MAX_LEN))
 
     @classmethod
     def insert(cls, columns: str, keys: str, values: dict) -> None:
@@ -69,7 +82,7 @@ class User(Model):
     """
     __tablename__ = 'users'
 
-    def __init__(self, id: int, firstname: str, lastname: str, username: str, password: str):
+    def __init__(self, id: str, firstname: str, lastname: str, username: str, password: str):
         self.id = id
         self.firstname = firstname
         self.lastname = lastname
@@ -82,11 +95,12 @@ class User(Model):
         Create the user table
         """
         super().create_table(
-            'id INTEGER PRIMARY KEY AUTOINCREMENT, \
-                firstname TEXT, \
-                lastname TEXT, \
-                username TEXT, \
-                password TEXT'
+            'id VARCHAR({TEXT_LEN}) PRIMARY KEY, \
+                firstname VARCHAR({TEXT_LEN}), \
+                lastname VARCHAR({TEXT_LEN}), \
+                username VARCHAR({TEXT_LEN}), \
+                password VARCHAR({TEXT_LEN})',
+            True
         )
 
     @classmethod
@@ -100,16 +114,17 @@ class User(Model):
         :param password: password
         """
         super().insert(
-            'firstname, lastname, username, password',
-            ':firstname, :lastname, :username, :password',
+            'id, firstname, lastname, username, password',
+            ':id, :firstname, :lastname, :username, :password',
             {
+                'id': gen_rand_string('us'),
                 'firstname': firstname, 'lastname': lastname,
                 'username': username, 'password': password
             }
         )
 
     @classmethod
-    def select(cls, user_id: int, findById=True):
+    def select(cls, user_id: str, findById=True):
         """
         Return the User with the given ID, if it exists
 
@@ -134,7 +149,7 @@ class User(Model):
         return len(super().select('username', username)) > 0
 
     @classmethod
-    def delete(cls, user_id: int) -> None:
+    def delete(cls, user_id: str) -> None:
         """
         Delete the user row with the given ID
 

@@ -12,7 +12,8 @@ setup(
     ],
     extras_require={
         'staging': [
-            'uwsgi'
+            'uwsgi',
+            'pymysql',
         ]
     }
 )
