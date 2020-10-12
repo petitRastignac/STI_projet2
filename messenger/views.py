@@ -1,8 +1,12 @@
-from flask import render_template, request, flash, redirect
+import datetime as dt
+
+from flask import render_template, request, flash, redirect, make_response
 
 from messenger import APP
-from messenger.models import User
-from messenger.security import check_pw, hash_pw
+from messenger.models import User, Session
+from messenger.security import check_pw, hash_pw, gen_rand_string
+from messenger.decorators import is_logged_in, is_admin
+from messenger.jwt import jwt_decode, jwt_encode
 
 @APP.route('/')
 def index():
@@ -11,6 +15,7 @@ def index():
     )
 
 @APP.route('/inbox')
+@is_logged_in
 def inbox():
     return render_template(
         'inbox.html'
@@ -23,6 +28,8 @@ def new():
     )
 
 @APP.route('/manageUser')
+@is_logged_in
+@is_admin
 def manageUser():
     # TODO only show if admin
     return render_template(
@@ -72,8 +79,30 @@ def login():
         elif not (user and check_pw(args['password'], user.password)):
             flash('Bad credentials', 'alert-danger')
         else:
+            # generate new session
+            expiry = int((
+                dt.datetime.now() + Session.SESSION_DURATION
+            ).replace(microsecond=0).timestamp())
+            session_id = gen_rand_string()
+            Session.insert(
+                session_id=session_id,
+                user_id=user.id,
+                expiry=expiry,
+                ip=request.remote_addr,
+                user_agent=request.user_agent.string
+            )
+
+            # set cookie in response and redirect to inbox
+            res = make_response(redirect('/inbox'))
+            # TODO secure=True
+            res.set_cookie(
+                key='auth',
+                value=jwt_encode({'session': session_id, 'exp': expiry}),
+                expires=expiry,
+                samesite='Strict',
+            )
             flash('Successfully logged in', 'alert-success')
-            return redirect('/')
+            return res
 
     return render_template(
         'login.html',
@@ -103,6 +132,7 @@ def signup():
         else:
             # create new account and redirect to login page
             User.insert(
+                False,
                 args['firstname'], args['lastname'],
                 args['username'], hash_pw(args['password'])
             )

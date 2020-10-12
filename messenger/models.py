@@ -1,3 +1,5 @@
+import datetime as dt
+
 from messenger import DB
 from messenger.security import gen_rand_string
 
@@ -12,27 +14,27 @@ class Model(object):
     TEXT_MAX_LEN = 200
 
     @classmethod
-    def create_table(cls, columns_stmt: str, drop=False) -> None:
+    def create_table(cls, columns_stmt: str) -> None:
         """
         Execute a `CREATE TABLE` command using the calling classe's
         `__tablename__` table with the supplied columns statement
 
-        If `drop` is true, a `DROP TABLE IF EXISTS` command will
-        be issued beforehand.
-
         :param columns_stmt: SQL columns declaration
         """
-        if drop:
-            DB.engine.execute('DROP TABLE IF EXISTS {}'.format(
-                cls.__tablename__
-            ))
-
         DB.engine.execute('CREATE TABLE {} ({})'.format(
             cls.__tablename__,
             columns_stmt.format(TEXT_LEN=Model.TEXT_MAX_LEN),
         ))
 
-        print(columns_stmt.format(TEXT_LEN=Model.TEXT_MAX_LEN))
+    @classmethod
+    def drop_table(cls) -> None:
+        """
+        Execute a `DROP TABLE IF EXISTS` command using the calling
+        classe's `__tablename__` table.
+        """
+        DB.engine.execute('DROP TABLE IF EXISTS {}'.format(
+            cls.__tablename__
+        ))
 
     @classmethod
     def insert(cls, columns: str, keys: str, values: dict) -> None:
@@ -82,8 +84,9 @@ class User(Model):
     """
     __tablename__ = 'users'
 
-    def __init__(self, id: str, firstname: str, lastname: str, username: str, password: str):
+    def __init__(self, id: str, admin: bool, firstname: str, lastname: str, username: str, password: str):
         self.id = id
+        self.admin = admin
         self.firstname = firstname
         self.lastname = lastname
         self.username = username
@@ -95,29 +98,32 @@ class User(Model):
         Create the user table
         """
         super().create_table(
-            'id VARCHAR({TEXT_LEN}) PRIMARY KEY, \
-                firstname VARCHAR({TEXT_LEN}), \
-                lastname VARCHAR({TEXT_LEN}), \
-                username VARCHAR({TEXT_LEN}), \
-                password VARCHAR({TEXT_LEN})',
-            True
+            """
+            id VARCHAR({TEXT_LEN}) PRIMARY KEY,
+            admin BOOLEAN NOT NULL,
+            firstname VARCHAR({TEXT_LEN}) NOT NULL,
+            lastname VARCHAR({TEXT_LEN}) NOT NULL,
+            username VARCHAR({TEXT_LEN}) UNIQUE NOT NULL,
+            password VARCHAR({TEXT_LEN}) NOT NULL
+            """,
         )
 
     @classmethod
-    def insert(cls, firstname: str, lastname: str, username: str, password: str) -> None:
+    def insert(cls, admin: bool, firstname: str, lastname: str, username: str, password: str) -> None:
         """
         Create a new user in the database with the supplied information
 
+        :param admin: admin status
         :param firstname: first name
         :param lastname: last name
         :param username: username
         :param password: password
         """
         super().insert(
-            'id, firstname, lastname, username, password',
-            ':id, :firstname, :lastname, :username, :password',
+            'admin, id, firstname, lastname, username, password',
+            ':admin, :id, :firstname, :lastname, :username, :password',
             {
-                'id': gen_rand_string('us'),
+                'admin': admin, 'id': gen_rand_string('us'),
                 'firstname': firstname, 'lastname': lastname,
                 'username': username, 'password': password
             }
@@ -134,8 +140,7 @@ class User(Model):
         """
         rows = super().select('id' if findById else 'username', user_id)
         if rows:
-            res = rows[0]
-            return User(res[0], res[1], res[2], res[3], res[4])
+            return User(*rows[0])
         return None
 
     @classmethod
@@ -156,3 +161,80 @@ class User(Model):
         :param user_id: user ID to look for and delete
         """
         super().delete('id', user_id)
+
+class Session(Model):
+    """
+    Database model representing a user session
+    """
+    __tablename__ = 'sessions'
+
+    SESSION_DURATION = dt.timedelta(hours=1)
+
+    def __init__(self, session_id, user_id, expiry, ip, user_agent):
+        self.id = session_id
+        self.user_id = user_id
+        self.expiry = dt.datetime.fromtimestamp(expiry)
+        self.ip = ip
+        self.user_agent = user_agent
+
+    @classmethod
+    def create_table(cls) -> None:
+        """
+        Create the user table
+        """
+        super().create_table(
+            columns_stmt="""
+            id VARCHAR({TEXT_LEN}) PRIMARY KEY,
+            user_id VARCHAR({TEXT_LEN}) NOT NULL,
+            expiry INTEGER NOT NULL,
+            ip VARCHAR({TEXT_LEN}) NOT NULL,
+            user_agent VARCHAR({TEXT_LEN}) NOT NULL,
+            CONSTRAINT `fk_session_user_id` FOREIGN KEY (user_id) REFERENCES users(id)
+            """
+        )
+
+    @classmethod
+    def insert(cls, session_id: str, user_id: str, expiry: int, ip: str, user_agent: str) -> None:
+        """
+        Create a session tied to the given user and with given parameters
+
+        :param session_id: session ID
+        :param user_id: user ID
+        :param expiry: UNIX timestamp after which the session is invalid
+        :param ip: IP for which the session is valid
+        :param user_agent: user agent for which the session is valid
+        """
+        super().insert(
+            columns='id, user_id, expiry, ip, user_agent',
+            keys=':id, :user_id, :expiry, :ip, :user_agent',
+            values={
+                'id': session_id,
+                'user_id': user_id,
+                'expiry': expiry,
+                'ip': ip,
+                'user_agent': user_agent,
+            }
+        )
+
+    @classmethod
+    def select(cls, session_id: str):
+        """
+        Return the User with the given ID, if it exists
+
+        :param user_id: user ID to look for
+        :param find_by_id: whether to find user by ID or username
+        :return: User if ID exists, else None
+        """
+        rows = super().select('id', session_id)
+        if rows:
+            return Session(*rows[0])
+        return None
+
+    @classmethod
+    def delete(cls, session_id: str) -> None:
+        """
+        Delete the session row with the given ID
+
+        :param session_id: session ID to look for and delete
+        """
+        super().delete('id', session_id)
