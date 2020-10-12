@@ -18,6 +18,16 @@ def inbox():
 
 @APP.route('/new')
 def new():
+    if request.method == 'POST':
+        # retrieve form data
+        args = {
+            'destinataire': request.form.get('text', type=str),
+            'sujet': request.form.get('text', type=str),
+            'message': request.form.get('text', type=str),
+        }
+
+        # TODO vérifier si le destinataire existe et envoyer le message
+
     return render_template(
         'new.html'
     )
