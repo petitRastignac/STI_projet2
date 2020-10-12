@@ -32,6 +32,23 @@ def manageUser():
 @APP.route('/changePassword')
 def changePassword():
     # TODO condition si déjà login->changePassword sinon->login
+    # TODO trouver l'utilisateur depuis les Cookie et changer le mot de passe dans la db
+    # handle incoming form
+    if request.method == 'POST':
+        # retrieve form data
+        args = {
+            'newPassword': request.form.get('password', type=str),
+            'repeatPassword': request.form.get('password', type=str),
+            'oldPassword': request.form.get('password', type=str),
+        }
+
+        # check for valid data
+        if(args['newPassword'] == args['repeatPassword'] and args['newPassword'] != args['oldPassword']):
+            flash('Successfully change password', 'alert-success')
+            return redirect('/')
+        else:
+            flash('Change password failled', 'alert-danger')
+
     return render_template(
         'changePassword.html'
     )
