@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : views.py
+#Date : 14.10.2020
+#But : ensemble des pages html
+#Remarque :
+#------------------------------
+
 import datetime as dt
 
 from flask import render_template, request, flash, redirect, make_response

@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : models.py
+#Date : 14.10.2020
+#But :
+#Remarque :
+#------------------------------
+
 import datetime as dt
 
 from messenger import DB

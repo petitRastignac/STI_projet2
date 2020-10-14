@@ -1,3 +1,9 @@
+# ---------------------------
+#Fichier : config.py
+#Date : 14.10.2020
+#But : configuration de database
+#Remarque :
+#------------------------------
 import os
 from messenger.security import gen_rand_string
 

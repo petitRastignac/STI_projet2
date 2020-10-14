@@ -1,3 +1,9 @@
+# ---------------------------
+#Fichier : security.py
+#Date : 14.10.2020
+#But :
+#Remarque :
+#------------------------------
 import random, string, base64
 
 from flask_scrypt import generate_random_salt, generate_password_hash, check_password_hash, debase64, enbase64

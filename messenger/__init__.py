@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : __init__.py
+#Date : 14.10.2020
+#But :
+#Remarque :
+#------------------------------
+
 # -*- coding: utf-8 -*-
 
 from .config import Config
