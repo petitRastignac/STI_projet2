@@ -9,11 +9,11 @@ setup(
         'flask',
         'flask-sqlalchemy',
         'flask-scrypt',
+        'pymysql',
     ],
     extras_require={
         'staging': [
             'uwsgi',
-            'pymysql',
         ]
     }
 )

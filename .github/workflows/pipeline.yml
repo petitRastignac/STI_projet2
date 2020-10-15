@@ -26,3 +26,11 @@ jobs:
           docker build -t sti-flask-ftw/sti-project-1/app .
           docker tag sti-flask-ftw/sti-project-1/app ghcr.io/sti-flask-ftw/sti-project-1/app
           docker push ghcr.io/sti-flask-ftw/sti-project-1/app
+
+      - name: Build database Docker image
+        run: |
+          cd docker/mariadb
+          echo ${{ secrets.PAT }} | docker login ghcr.io -u Serphentas --password-stdin
+          docker build -t sti-flask-ftw/sti-project-1/db .
+          docker tag sti-flask-ftw/sti-project-1/db ghcr.io/sti-flask-ftw/sti-project-1/db
+          docker push ghcr.io/sti-flask-ftw/sti-project-1/db

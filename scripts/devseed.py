@@ -6,8 +6,10 @@ sys.path.insert(0, os.path.dirname(CWD))
 
 from messenger.models import *
 
+# clean tables
 Session.drop_table()
 User.drop_table()
 
+# create tables
 User.create_table()
 Session.create_table()
