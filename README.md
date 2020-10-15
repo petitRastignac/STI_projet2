@@ -23,7 +23,7 @@ You will need a MySQL or MariaDB server running, and also to create the database
 You can use Docker to launch a MariaDB server:
 
 ```
-docker run -e MYSQL_ROOT_PASSWORD=sti -p 3306:3306 -h sti_db -d mariadb
+docker run -e MYSQL_ROOT_PASSWORD=sti -p 3306:3306 -d mariadb
 ```
 
 Create the database:
