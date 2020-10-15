@@ -31,8 +31,10 @@ def index():
 @APP.route('/inbox')
 @is_logged_in
 def inbox():
+    user = current_user()
     return render_template(
-        'inbox.html'
+        'inbox.html',
+        user=user
     )
 
 @APP.route('/new')
