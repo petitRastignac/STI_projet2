@@ -1,0 +1,28 @@
+name: Build & publish stable Docker image
+
+on:
+  push:
+    branches: [ master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip
+        restore-keys: |
+          ${{ runner.os }}-pip
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: '3.8.6'
+
+      - name: Build application Docker image
+        run: |
+          echo ${{ secrets.PAT }} | docker login ghcr.io -u Serphentas --password-stdin
+          docker build -t serphentas/sti-project-1 .
+          docker tag serphentas/sti-project-1 ghcr.io/serphentas/sti-project-1
+          docker push ghcr.io/serphentas/sti-project-1

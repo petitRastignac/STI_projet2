@@ -2,19 +2,19 @@ version: "3"
 services:
   uwsgi:
     build:
-      context: .
+      context: ./app
     container_name: sti_uwsgi
     restart: always
     ports:
       - 9090:9090
-    volumes:
-      - ./:/app
     environment:
       FLASK_APP: messenger
       STI_MSN_DB: mysql+pymysql://sti:stipass@sti_db/sti
+    depends_on:
+      - db
 
   db:
-    image: mariadb/server
+    image: mariadb
     container_name: sti_db
     restart: always
     ports:
