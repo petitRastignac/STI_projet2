@@ -55,15 +55,15 @@ def new():
 @is_logged_in
 @is_admin
 def manageUser():
-    # TODO only show if admin
     return render_template(
         'manageUser.html'
     )
 
 @APP.route('/changePassword')
+@is_logged_in
 def changePassword():
-    # TODO condition si déjà login->changePassword sinon->login
     # TODO trouver l'utilisateur depuis les Cookie et changer le mot de passe dans la db
+    user = current_user()
     # handle incoming form
     if request.method == 'POST':
         # retrieve form data
