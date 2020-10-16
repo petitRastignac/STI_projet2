@@ -126,6 +126,20 @@ def login():
         title='Log in'
     )
 
+@APP.route('/logout')
+@is_logged_in
+def logout():
+    # delete session
+    Session.delete(get_current_jwt()['session'])
+
+    # force cookie expiry on client side
+    res = make_response(redirect('/login'))
+    res.set_cookie('auth', '', expires=0)
+
+    flash('Successfully logged out', 'alert-success')
+
+    return res
+
 @APP.route('/signup', methods=['GET', 'POST'])
 def signup():
     # handle incoming form
