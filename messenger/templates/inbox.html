@@ -57,5 +57,28 @@ Remarque :
         </div>
     </div>
 </div>
+<table class="table" id="">
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Expéditeur</th>
+            <th scope="col">Sujet</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th style="width: 25%" scope="row">Date1</th>
+            <th style="width: 25%">Expéditeur1</th>
+            <th style="width: 25%">Sujet1</th>
+            <th style="width: 25%" class="btn-group">
+                {% for message in tableau%}
+                <i class="fas fa-pencil-alt">Répondre</i>
+                <i class="fas fa-pencil-alt">Supprimer</i>
+                <i class="fas fa-pencil-alt">Lire</i>
+            </th>
+        </tr>
+    </tbody>
+</table>
 
 {% endblock %}
