@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : models.py
+#Date : 14.10.2020
+#But : Supprimer et recréer les tables puis créer un admin
+#Remarque :
+#------------------------------
+
 import os, sys, inspect
 import datetime as dt
 

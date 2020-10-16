@@ -14,6 +14,8 @@ _Messenger_ is a simple communication webapp where users can send short text mes
 
 You can either use this app [locally](#local) or [through Docker](#docker).
 
+To test admin functionality an admin account is automatically, username: admin password: admin.
+
 ### Local
 
 __Step 1: Database__
