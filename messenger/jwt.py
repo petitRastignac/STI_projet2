@@ -54,9 +54,6 @@ def jwt_decode(jwt: str) -> dict:
     header = b64unpack(header)
     payload = b64unpack(payload)
 
-    print(header)
-    print(payload)
-
     own_jwt = jwt_encode(payload, header)
 
     if hmac.compare_digest(own_jwt, jwt):
@@ -91,4 +88,9 @@ def b64unpack(data: str) -> dict:
     )
 
 def get_current_jwt():
+    """
+    Return the JWT in the current request
+
+    :return: JWT in current request
+    """
     return jwt_decode(request.cookies.get('auth'))
