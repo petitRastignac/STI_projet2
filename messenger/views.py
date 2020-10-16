@@ -100,6 +100,8 @@ def new_message():
         user=user
     )
 
+@APP.route('/message/<string:message_id>/delete')
+
 @APP.route('/admin')
 @is_logged_in
 @is_admin
@@ -141,6 +143,7 @@ def change_password():
         elif not check_pw(args['currentPassword'], user.password):
             flash('Current password is incorrect', 'alert-danger')
         else:
+            User.update(user.username, {'password': hash_pw(args['newPassword'])})
             flash('Password successfully changed', 'alert-success')
             return logout(False)
 

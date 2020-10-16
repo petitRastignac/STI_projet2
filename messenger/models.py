@@ -80,6 +80,32 @@ class Model(object):
         return DB.engine.execute(stmt.bindparams(**{key: value})).fetchall()
 
     @classmethod
+    def update(cls, update_dict: dict, ident_key: str, ident_value: object) -> None:
+        """
+        Execute an `UPDATE` command on the calling classe's
+        `__tablename__` table with the given parameters
+
+        :param update_dict: mapping of columns to their new values
+        :param ident_key: column to use in the `WHERE` clause
+        :param ident_value: value to use in the `WHERE` clause
+        """
+        stmt = DB.text('UPDATE {} SET {} WHERE {IDENT_KEY}=:{IDENT_KEY}'.format(
+            cls.__tablename__,
+            ''.join(
+                ', {}=:{}'.format(x, x) for x in update_dict
+            )[2:],
+            IDENT_KEY=ident_key
+        ))
+
+        # populate parameters dict
+        params_dict = {ident_key: ident_value}
+        for x in update_dict:
+            params_dict[x] = update_dict[x]
+
+        DB.engine.execute(stmt.bindparams(**params_dict))
+
+
+    @classmethod
     def delete(cls: object, key: str, value: object) -> None:
         """
         Execute a `DELETE` command on the calling classe's
@@ -169,8 +195,8 @@ class User(Model):
         return isinstance(cls.select(username), User)
 
     @classmethod
-    def update(cls, set_):
-        pass
+    def update(cls, username, update_dict):
+        super().update(update_dict, 'username', username)
 
     @classmethod
     def delete(cls, username: str) -> None:
@@ -324,5 +350,17 @@ class Message(Model):
         rows = super().select('recipient_name', recipient_name)
         if rows:
             print(rows)
-            return [Message(*row) for row in rows]
+            return sorted(
+                [Message(*row) for row in rows],
+                key=lambda x: x.date
+            )
         return None
+
+    @classmethod
+    def delete(cls, message_id: str) -> None:
+        """
+        Delete the message row with the given ID
+
+        :param message_id: ID to look for and delete
+        """
+        super().delete('id', message_id)
