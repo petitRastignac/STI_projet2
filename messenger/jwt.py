@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : jwt.py
+#Date : 14.10.2020
+#But :
+#Remarque :
+#------------------------------
+
 import json, base64, hmac
 
 from flask import request

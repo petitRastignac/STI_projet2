@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : decorators.py
+#Date : 14.10.2020
+#But :
+#Remarque :
+#------------------------------
+
 import datetime as dt
 from functools import wraps
 

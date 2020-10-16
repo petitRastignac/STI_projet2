@@ -1,3 +1,10 @@
+# ---------------------------
+#Fichier : views.py
+#Date : 14.10.2020
+#But : ensemble des pages html
+#Remarque :
+#------------------------------
+
 import datetime as dt
 
 from flask import render_template, request, flash, redirect, make_response
@@ -24,8 +31,10 @@ def index():
 @APP.route('/inbox')
 @is_logged_in
 def inbox():
+    user = current_user()
     return render_template(
-        'inbox.html'
+        'inbox.html',
+        user=user
     )
 
 @APP.route('/new')
@@ -48,15 +57,15 @@ def new():
 @is_logged_in
 @is_admin
 def manageUser():
-    # TODO only show if admin
     return render_template(
         'manageUser.html'
     )
 
 @APP.route('/changePassword')
+@is_logged_in
 def changePassword():
-    # TODO condition si déjà login->changePassword sinon->login
     # TODO trouver l'utilisateur depuis les Cookie et changer le mot de passe dans la db
+    user = current_user()
     # handle incoming form
     if request.method == 'POST':
         # retrieve form data

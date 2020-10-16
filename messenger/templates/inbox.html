@@ -1,3 +1,9 @@
+<!-- ---------------------------
+Fichier :inbox.html
+Date : 14.10.2020
+But : Affiche les messages reçus
+Remarque :
+------------------------- -->
 {% extends 'base.html' %}
 {% block body %}
 
@@ -23,6 +29,7 @@
             <th style="width: 25%">Expéditeur1</th>
             <th style="width: 25%">Sujet1</th>
             <th style="width: 25%" class="btn-group">
+                {% for message in tableau}
                 <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Répondre</a>
                 <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Supprimer</a>
                 <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Lire</a>

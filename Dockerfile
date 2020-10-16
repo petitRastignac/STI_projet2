@@ -9,8 +9,5 @@ RUN apt update && apt install build-essential
 RUN pip install -U setuptools wheel
 RUN pip install -U .[staging]
 
-# Setup database
-RUN python scripts/devseed.py
-
 # Run the application:
 CMD uwsgi --http :9090 --module messenger:APP
