@@ -10,6 +10,16 @@ import datetime as dt
 from messenger import DB
 from messenger.security import gen_rand_string
 
+def cols2keys(columns):
+    return ''.join(
+        ', :{}'.format(x.replace(' ', '')) for x in columns.split(',')
+    )[2:]
+
+def get_current_timestamp() -> int:
+    return int((
+        dt.datetime.now() + Session.SESSION_DURATION
+    ).replace(microsecond=0).timestamp())
+
 class Model(object):
     """
     Generic database model
@@ -91,13 +101,13 @@ class User(Model):
     """
     __tablename__ = 'users'
 
-    def __init__(self, id: str, admin: bool, firstname: str, lastname: str, username: str, password: str):
-        self.id = id
+    def __init__(self, admin: bool, username: str, firstname: str, lastname: str, password: str):
         self.admin = admin
+        self.username = username
         self.firstname = firstname
         self.lastname = lastname
-        self.username = username
         self.password = password
+        self.messages = Message.from_recipient(self.username)
 
     @classmethod
     def create_table(cls) -> None:
@@ -106,11 +116,10 @@ class User(Model):
         """
         super().create_table(
             """
-            id VARCHAR({TEXT_LEN}) PRIMARY KEY,
             admin BOOLEAN NOT NULL,
+            username VARCHAR({TEXT_LEN}) PRIMARY KEY,
             firstname VARCHAR({TEXT_LEN}) NOT NULL,
             lastname VARCHAR({TEXT_LEN}) NOT NULL,
-            username VARCHAR({TEXT_LEN}) UNIQUE NOT NULL,
             password VARCHAR({TEXT_LEN}) NOT NULL
             """,
         )
@@ -127,25 +136,24 @@ class User(Model):
         :param password: password
         """
         super().insert(
-            'admin, id, firstname, lastname, username, password',
-            ':admin, :id, :firstname, :lastname, :username, :password',
+            'admin, firstname, lastname, username, password',
+            ':admin, :firstname, :lastname, :username, :password',
             {
-                'admin': admin, 'id': gen_rand_string('us'),
+                'admin': admin,
                 'firstname': firstname, 'lastname': lastname,
                 'username': username, 'password': password
             }
         )
 
     @classmethod
-    def select(cls, user_id: str, findById=True):
+    def select(cls, username: str):
         """
-        Return the User with the given ID, if it exists
+        Return the User with the given username, if it exists
 
-        :param user_id: user ID to look for
-        :param find_by_id: whether to find user by ID or username
-        :return: User if ID exists, else None
+        :param username: username to look for
+        :return: User if username exists, else None
         """
-        rows = super().select('id' if findById else 'username', user_id)
+        rows = super().select('username', username)
         if rows:
             return User(*rows[0])
         return None
@@ -158,21 +166,25 @@ class User(Model):
         :param username: username to look for
         :return: True if username is used by an account
         """
-        return len(super().select('username', username)) > 0
+        return isinstance(cls.select(username), User)
 
     @classmethod
-    def delete(cls, user_id: str) -> None:
-        """
-        Delete the user row with the given ID
+    def update(cls, set_):
+        pass
 
-        :param user_id: user ID to look for and delete
+    @classmethod
+    def delete(cls, username: str) -> None:
         """
-        super().delete('id', user_id)
+        Delete the user row with the given username
+
+        :param username: username to look for and delete
+        """
+        super().delete('username', username)
 
     @classmethod
     def from_session(cls, session_id: str):
         session = Session.select(session_id)
-        return User.select(session.user_id)
+        return User.select(session.username)
 
 class Session(Model):
     """
@@ -182,9 +194,9 @@ class Session(Model):
 
     SESSION_DURATION = dt.timedelta(hours=1)
 
-    def __init__(self, session_id, user_id, expiry, ip, user_agent):
+    def __init__(self, session_id, username, expiry, ip, user_agent):
         self.id = session_id
-        self.user_id = user_id
+        self.username = username
         self.expiry = dt.datetime.fromtimestamp(expiry)
         self.ip = ip
         self.user_agent = user_agent
@@ -197,31 +209,31 @@ class Session(Model):
         super().create_table(
             columns_stmt="""
             id VARCHAR({TEXT_LEN}) PRIMARY KEY,
-            user_id VARCHAR({TEXT_LEN}) NOT NULL,
+            username VARCHAR({TEXT_LEN}) NOT NULL,
             expiry INTEGER NOT NULL,
             ip VARCHAR({TEXT_LEN}) NOT NULL,
             user_agent VARCHAR({TEXT_LEN}) NOT NULL,
-            CONSTRAINT `fk_session_user_id` FOREIGN KEY (user_id) REFERENCES users(id)
+            CONSTRAINT `fk_session_username` FOREIGN KEY (username) REFERENCES users(username)
             """
         )
 
     @classmethod
-    def insert(cls, session_id: str, user_id: str, expiry: int, ip: str, user_agent: str) -> None:
+    def insert(cls, session_id: str, username: str, expiry: int, ip: str, user_agent: str) -> None:
         """
         Create a session tied to the given user and with given parameters
 
         :param session_id: session ID
-        :param user_id: user ID
+        :param username: username ID
         :param expiry: UNIX timestamp after which the session is invalid
         :param ip: IP for which the session is valid
         :param user_agent: user agent for which the session is valid
         """
         super().insert(
-            columns='id, user_id, expiry, ip, user_agent',
-            keys=':id, :user_id, :expiry, :ip, :user_agent',
+            columns='id, username, expiry, ip, user_agent',
+            keys=':id, :username, :expiry, :ip, :user_agent',
             values={
                 'id': session_id,
-                'user_id': user_id,
+                'username': username,
                 'expiry': expiry,
                 'ip': ip,
                 'user_agent': user_agent,
@@ -250,3 +262,67 @@ class Session(Model):
         :param session_id: session ID to look for and delete
         """
         super().delete('id', session_id)
+
+class Message(Model):
+    __tablename__ = 'messages'
+
+    def __init__(self, id, sender_name, recipient_name, date, title, body):
+        self.id = id
+        self.sender_name = sender_name
+        self.recipient_name = recipient_name
+        self.date = date
+        self.title = title
+        self.body = body
+
+    @classmethod
+    def create_table(cls) -> None:
+        """
+        Create the user table
+        """
+        super().create_table(
+            columns_stmt="""
+            id VARCHAR({TEXT_LEN}) PRIMARY KEY,
+            sender_name VARCHAR({TEXT_LEN}) NOT NULL,
+            recipient_name VARCHAR({TEXT_LEN}) NOT NULL,
+            date INTEGER NOT NULL,
+            title VARCHAR({TEXT_LEN}) NOT NULL,
+            body VARCHAR({TEXT_LEN}) NOT NULL,
+            CONSTRAINT `fk_message_sender_name` FOREIGN KEY (sender_name) REFERENCES users(username),
+            CONSTRAINT `fk_message_recipient_name` FOREIGN KEY (recipient_name) REFERENCES users(username)
+            """
+        )
+
+    @classmethod
+    def insert(cls, sender_name, recipient_name, date, title, body) -> None:
+        columns = 'id, sender_name, recipient_name, date, title, body'
+        super().insert(
+            columns=columns,
+            keys=cols2keys(columns),
+            values={
+                'id': gen_rand_string('me'), 'sender_name': sender_name,
+                'recipient_name': recipient_name,
+                'date': date, 'title': title, 'body': body
+            }
+        )
+
+    @classmethod
+    def select(cls, message_id):
+        rows = super().select('id', message_id)
+        if rows:
+            return Message(*rows[0])
+        return None
+
+    @classmethod
+    def from_sender(cls, sender_name):
+        rows = super().select('sender_name', sender_name)
+        if rows:
+            return [Message(*row) for row in rows]
+        return None
+
+    @classmethod
+    def from_recipient(cls, recipient_name):
+        rows = super().select('recipient_name', recipient_name)
+        if rows:
+            print(rows)
+            return [Message(*row) for row in rows]
+        return None

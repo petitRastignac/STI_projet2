@@ -23,14 +23,13 @@ You will need a MySQL or MariaDB server running, and also to create the database
 You can use Docker to launch a MariaDB server:
 
 ```
-docker run -e MYSQL_ROOT_PASSWORD=sti -p 3306:3306 -d mariadb
+docker run -e MYSQL_ROOT_PASSWORD=sti -p 3306:3306 -d --name sti_db_dev mariadb
 ```
 
 Create the database:
 
 ```
-DROP DATABASE IF EXISTS sti;
-CREATE DATABASE sti;
+docker exec -it sti_db_dev mysql -u root -p -e "DROP DATABASE IF EXISTS sti; CREATE DATABASE sti;"
 ```
 
 Then set the appropriate credentials like so:
@@ -95,21 +94,18 @@ export FLASK_DEBUG=True
 Assuming you already have Docker working, simply use `docker-compose`:
 
 ```
-docker-compose build --no-cache
-docker-compose up
-```
-
-In a separate terminal, initialize the database schema:
+docker-compose up -d
+docker exec -it sti_uwsgi python /app/scripts/devseed.py
 
 ```
-docker exec -it asd sti_uwsgi /app/scripts/devseed.py # can also be used to wipe the database clean
-```
 
-Messenger is now available at [http://localhost:9090](http://localhost:9090).
+The last command initializes the database schema (can also be used to wipe the database clean).
 
-Killing the stack requires a double `Ctrl+C`.
+Messenger is now available at [http://localhost:12321](http://localhost:12321).
 
-You may use Adminer to access the database using a convenient GUI available at [http://localhost:8080](http://localhost:8080). Use the following credentials:
+Note: when running Docker in the foreground, killing the stack requires a double `Ctrl+C`.
+
+You may use Adminer to access the database using a convenient GUI available at [http://localhost:45654](http://localhost:45654). Use the following credentials:
 
 - Server: `sti_db`
 - Username: `sti`

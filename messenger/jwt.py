@@ -56,6 +56,8 @@ def jwt_decode(jwt: str) -> dict:
     :param jwt: JWT to verify
     :return: JWT payload if signature is valid, else None
     """
+    # TODO handle malformed jwt
+
     header, payload, signature = jwt.split('.')
 
     header = b64unpack(header)

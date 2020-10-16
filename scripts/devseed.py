@@ -8,8 +8,10 @@ from messenger.models import *
 
 # clean tables
 Session.drop_table()
+Message.drop_table()
 User.drop_table()
 
 # create tables
 User.create_table()
 Session.create_table()
+Message.create_table()

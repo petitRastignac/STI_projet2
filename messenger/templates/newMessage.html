@@ -10,12 +10,9 @@ Remarque :
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col col-md-8 offset-md-2 mt-2">
+        <div class="col col-md-8 offset-md-2 mt-4">
             <h2><b>{{ title }}</b></h2>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col col-md-8 offset-md-2 mt-2">
+
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -23,18 +20,22 @@ Remarque :
                     {% endfor %}
                 {% endif %}
             {% endwith %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col col-md-8 offset-md-2 mt-2">
             <form method="POST">
                 <div class="form-group">
-                    <label>Destinataire</label>
-                    <input name="destinataire" type="text" class="form-control" required>
+                    <label>Recipient username</label>
+                    <input name="recipient" type="text" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Sujet</label>
-                    <input name="sujet" type="text" class="form-control" required>
+                    <label>Title</label>
+                    <input name="title" type="text" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Message</label>
-                    <textarea name="message" type="text" class="form-control" rows="5"></textarea>
+                    <textarea name="body" type="text" class="form-control" rows="5"></textarea>
                 </div>
                 <div class="form-group text-center">
                     <button type="submit" class="btn btn-primary btn-lg">Send</button>

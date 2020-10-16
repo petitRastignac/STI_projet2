@@ -10,12 +10,33 @@ import datetime as dt
 from flask import render_template, request, flash, redirect, make_response
 
 from messenger import APP
-from messenger.models import User, Session
+from messenger.models import User, Session, Message, Model, get_current_timestamp
 from messenger.security import check_pw, hash_pw, gen_rand_string
 from messenger.decorators import is_logged_in, is_admin
 from messenger.jwt import jwt_decode, jwt_encode, get_current_jwt
 
 def current_user():
+    # What is GEN ? Baby don't duplicate me, don't duplicate me, oh no
+
+    # check if session cookie is present
+    cookie = request.cookies.get('auth')
+    if not cookie:
+        return None
+
+    # check if a valid JWT came in the cookie
+    payload = jwt_decode(cookie)
+    if not payload:
+        return None
+
+    # check if the named session exists
+    session = Session.select(payload['session'])
+    if not session:
+        return None
+
+    # check if the session has expired
+    if session.expiry <= dt.datetime.now():
+        return None
+
     return User.from_session(get_current_jwt()['session'])
 
 @APP.route('/')
@@ -25,65 +46,108 @@ def index():
 
     return render_template(
         'index.html',
-        firstname=user.firstname
+        firstname=user.firstname,
+        user=user
     )
 
 @APP.route('/inbox')
 @is_logged_in
 def inbox():
-    user = current_user()
     return render_template(
         'inbox.html',
-        user=user
+        title='Inbox',
+        user=current_user()
     )
 
-@APP.route('/new')
-def new():
+@APP.route('/newMessage', methods=['GET', 'POST'])
+@is_logged_in
+def new_message():
+    user = current_user()
+
     if request.method == 'POST':
         # retrieve form data
         args = {
-            'destinataire': request.form.get('text', type=str),
-            'sujet': request.form.get('text', type=str),
-            'message': request.form.get('text', type=str),
+            'recipient': request.form.get('recipient', type=str),
+            'title': request.form.get('title', type=str),
+            'body': request.form.get('body', type=str),
         }
 
-        # TODO vérifier si le destinataire existe et envoyer le message
+        # ensure fields are present and within database limits
+        if any(x == None for x in args.values()):
+            flash('All fields are required', 'alert-danger')
+        elif any(len(x) > Model.TEXT_MAX_LEN for x in args.values()):
+            flash(
+                'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
+                'alert-danger'
+            )
+        # check if recipient exists
+        elif not User.find(args['recipient']):
+            flash("Recipient doesn't exist", 'alert-danger')
+        # create new message
+        else:
+            message = Message.insert(
+                sender_name=user.username,
+                recipient_name=args['recipient'],
+                date=get_current_timestamp(),
+                title=args['title'],
+                body=args['body']
+            )
+            flash('Message successfully sent', 'alert-success')
 
     return render_template(
-        'new.html'
+        'newMessage.html',
+        title='New message',
+        user=user
     )
 
-@APP.route('/manageUser')
+@APP.route('/admin')
 @is_logged_in
 @is_admin
-def manageUser():
+def admin():
+    user = current_user()
+
     return render_template(
-        'manageUser.html'
+        'admin.html',
+        title='Administration',
+        user=user
     )
 
-@APP.route('/changePassword')
+@APP.route('/changePassword', methods=['GET', 'POST'])
 @is_logged_in
-def changePassword():
-    # TODO trouver l'utilisateur depuis les Cookie et changer le mot de passe dans la db
+def change_password():
     user = current_user()
+
     # handle incoming form
     if request.method == 'POST':
         # retrieve form data
         args = {
-            'newPassword': request.form.get('password', type=str),
-            'repeatPassword': request.form.get('password', type=str),
-            'oldPassword': request.form.get('password', type=str),
+            'newPassword': request.form.get('newPassword', type=str),
+            'repeatPassword': request.form.get('repeatPassword', type=str),
+            'currentPassword': request.form.get('currentPassword', type=str),
         }
 
         # check for valid data
-        if(args['newPassword'] == args['repeatPassword'] and args['newPassword'] != args['oldPassword']):
-            flash('Successfully change password', 'alert-success')
-            return redirect('/')
+        if any(x == None for x in args.values()):
+            flash('All fields are required', 'alert-danger')
+        elif any(len(x) > Model.TEXT_MAX_LEN for x in args.values()):
+            flash(
+                'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
+                'alert-danger'
+            )
+        elif args['newPassword'] != args['repeatPassword']:
+            flash("New passwords don't match", 'alert-danger')
+        elif args['newPassword'] == args['currentPassword']:
+            flash('New password is the same as the current one', 'alert-danger')
+        elif not check_pw(args['currentPassword'], user.password):
+            flash('Current password is incorrect', 'alert-danger')
         else:
-            flash('Change password failled', 'alert-danger')
+            flash('Password successfully changed', 'alert-success')
+            return logout(False)
 
     return render_template(
-        'changePassword.html'
+        'changePassword.html',
+        title='Change password',
+        user=user
     )
 
 @APP.route('/login', methods=['GET', 'POST'])
@@ -97,22 +161,25 @@ def login():
         }
 
         # get matching user
-        user = User.select(args['username'], False)
+        user = User.select(args['username'])
 
         # check for valid data and no user conflicts
-        if any(x == None for x in args):
+        if any(x == None for x in args.values()):
             flash('All fields are required', 'alert-danger')
+        elif any(len(x) > Model.TEXT_MAX_LEN for x in args.values()):
+            flash(
+                'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
+                'alert-danger'
+            )
         elif not (user and check_pw(args['password'], user.password)):
             flash('Bad credentials', 'alert-danger')
         else:
             # generate new session
-            expiry = int((
-                dt.datetime.now() + Session.SESSION_DURATION
-            ).replace(microsecond=0).timestamp())
+            expiry = get_current_timestamp()
             session_id = gen_rand_string()
             Session.insert(
                 session_id=session_id,
-                user_id=user.id,
+                username=user.username,
                 expiry=expiry,
                 ip=request.remote_addr,
                 user_agent=request.user_agent.string
@@ -137,7 +204,7 @@ def login():
 
 @APP.route('/logout')
 @is_logged_in
-def logout():
+def logout(do_flash=True):
     # delete session
     Session.delete(get_current_jwt()['session'])
 
@@ -145,7 +212,8 @@ def logout():
     res = make_response(redirect('/login'))
     res.set_cookie('auth', '', expires=0)
 
-    flash('Successfully logged out', 'alert-success')
+    if do_flash:
+        flash('Successfully logged out', 'alert-success')
 
     return res
 
@@ -163,11 +231,16 @@ def signup():
         }
 
         # check for valid data and no user conflicts
-        if any(x == None for x in args):
+        if any(x == None for x in args.values()):
             flash('All fields are required', 'alert-danger')
+        elif any(len(x) > Model.TEXT_MAX_LEN for x in args.values()):
+            flash(
+                'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
+                'alert-danger'
+            )
         elif args['password'] != args['password_confirm']:
             flash("Passwords don't match", 'alert-danger')
-        elif User.find(args['username']): # TODO implement user check
+        elif User.find(args['username']):
             flash('Username is already used', 'alert-danger')
         else:
             # create new account and redirect to login page

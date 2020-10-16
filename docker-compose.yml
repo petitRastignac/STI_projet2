@@ -5,7 +5,7 @@ services:
     container_name: sti_uwsgi
     restart: always
     ports:
-      - 9090:9090
+      - 12321:9090
     environment:
       FLASK_APP: messenger
       STI_MSN_DB: mysql+pymysql://sti:stipass@sti_db/sti
@@ -17,7 +17,7 @@ services:
     container_name: sti_db
     restart: always
     ports:
-      - 3306:3306
+      - 32123:3306
     environment:
       MYSQL_USER: sti
       MYSQL_ROOT_PASSWORD: stipass
@@ -29,7 +29,7 @@ services:
     container_name: sti_adminer
     restart: always
     ports:
-      - 8080:8080
+      - 45654:8080
     environment:
       ADMINER_DEFAULT_SERVER: sti_db
     depends_on:
