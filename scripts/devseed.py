@@ -15,3 +15,10 @@ User.drop_table()
 User.create_table()
 Session.create_table()
 Message.create_table()
+
+# create one admin
+User.insert(
+  True,
+  args['admin'], args['admin'],
+  args['admin'], hash_pw(args['admin'])
+)
