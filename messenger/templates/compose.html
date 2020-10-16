@@ -25,13 +25,14 @@ Remarque :
     <div class="row">
         <div class="col col-md-8 offset-md-2 mt-2">
             <form method="POST">
+                <!-- What is a CSRF ? Cute and Small Round Feijao -->
                 <div class="form-group">
                     <label>Recipient username</label>
-                    <input name="recipient" type="text" class="form-control" required>
+                    <input id='recipient' name="recipient" type="text" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Title</label>
-                    <input name="title" type="text" class="form-control" required>
+                    <input id='title' name="title" type="text" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Message</label>
@@ -44,5 +45,16 @@ Remarque :
         </div>
     </div>
 </div>
+
+<script>
+    let searchParams = new URLSearchParams(window.location.search)
+
+    if (searchParams.get('recipient') != null) {
+        document.getElementById('recipient').value = searchParams.get('recipient');
+    }
+    if (searchParams.get('title') != null) {
+        document.getElementById('title').value = searchParams.get('title');
+    }
+</script>
 
 {% endblock %}

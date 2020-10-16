@@ -1,0 +1,79 @@
+<!-- ---------------------------
+Fichier : user_id.html
+Date : 16.10.2020
+But : Page de gestion d'un utilisateur
+Remarque :
+------------------------- -->
+{% extends 'base.html' %}
+{% block body %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col col-md-4 offset-md-4 mt-4">
+            <h2><b>{{ title }}</b></h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-dismissable {{ category }} fade show" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-label-hidden="true">&times;</span></button>{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-4 offset-md-4">
+            <form method="POST">
+                <!-- What is a CSRF ? Cute and Small Round Feijao -->
+                <div class="form-group">
+                    <label>First name</label>
+                    <input id="firstname" type="text" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Last name</label>
+                    <input id="lastname" type="text" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input id="username" name="username" type="text" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input id="password" name="password" type="password" class="form-control">
+                    <small>Leave empty to not change the password.</small>
+                </div>
+                <div class="form-group">
+                    <label>Active</label>
+                    <input id="active" name="active" type="checkbox" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Admin</label>
+                    <input id="admin" name="admin" type="checkbox" class="form-control">
+                </div>
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-4 offset-md-4">
+            <a href="/admin" class="btn btn-primary active" role="button" aria-pressed="true">
+                Back to admin panel
+            </a>
+            <a href="/user/{{ otheruser.username }}/delete" class="btn btn-danger active" role="button" aria-pressed="true">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('firstname').value = '{{ otheruser.firstname }}';
+    document.getElementById('lastname').value = '{{ otheruser.lastname }}';
+    document.getElementById('username').value = '{{ otheruser.username }}';
+    document.getElementById('active').checked = {% if otheruser.active %}true{% else %}false{% endif %};
+    document.getElementById('admin').checked = {% if otheruser.admin %}true{% else %}false{% endif %};
+</script>
+
+{% endblock %}

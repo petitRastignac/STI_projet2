@@ -8,7 +8,7 @@
 import datetime as dt
 from functools import wraps
 
-from flask import request, redirect, url_for, flash
+from flask import request, redirect, flash
 
 from messenger.models import Session, User
 from messenger.jwt import jwt_decode

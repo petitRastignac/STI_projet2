@@ -8,7 +8,7 @@
 import datetime as dt
 
 from messenger import DB
-from messenger.security import gen_rand_string
+from messenger.security import gen_rand_string, hash_pw
 
 def cols2keys(columns):
     return ''.join(
@@ -127,13 +127,19 @@ class User(Model):
     """
     __tablename__ = 'users'
 
-    def __init__(self, admin: bool, username: str, firstname: str, lastname: str, password: str):
+    def __init__(self, admin: bool, active: bool, username: str, firstname: str, lastname: str, password: str):
         self.admin = admin
+        self.active = active
         self.username = username
         self.firstname = firstname
         self.lastname = lastname
         self.password = password
         self.messages = Message.from_recipient(self.username)
+
+    def __str__(self):
+        return '{} {} (@{})'.format(
+            self.firstname, self.lastname, self.username
+        )
 
     @classmethod
     def create_table(cls) -> None:
@@ -143,6 +149,7 @@ class User(Model):
         super().create_table(
             """
             admin BOOLEAN NOT NULL,
+            active BOOLEAN NOT NULL,
             username VARCHAR({TEXT_LEN}) PRIMARY KEY,
             firstname VARCHAR({TEXT_LEN}) NOT NULL,
             lastname VARCHAR({TEXT_LEN}) NOT NULL,
@@ -161,11 +168,12 @@ class User(Model):
         :param username: username
         :param password: password
         """
+        columns = 'admin, active, firstname, lastname, username, password'
         super().insert(
-            'admin, firstname, lastname, username, password',
-            ':admin, :firstname, :lastname, :username, :password',
-            {
-                'admin': admin,
+            columns=columns,
+            keys=cols2keys(columns),
+            values={
+                'admin': admin, 'active': True,
                 'firstname': firstname, 'lastname': lastname,
                 'username': username, 'password': password
             }
@@ -185,6 +193,13 @@ class User(Model):
         return None
 
     @classmethod
+    def all(cls) -> list:
+        rows = super().select('1', 1)
+        if rows:
+            return [User(*row) for row in rows]
+        return None
+
+    @classmethod
     def find(cls, username: str) -> bool:
         """
         Check whether a user with the given username exists
@@ -199,12 +214,29 @@ class User(Model):
         super().update(update_dict, 'username', username)
 
     @classmethod
+    def change_pass(cls, username, newpass):
+        # update password
+        cls.update(username, {'password': hash_pw(newpass)})
+
+        # terminate all sessions
+        Session.terminate_user(username)
+
+    @classmethod
     def delete(cls, username: str) -> None:
         """
         Delete the user row with the given username
 
         :param username: username to look for and delete
         """
+        user = cls.select(username)
+
+        # delete user's inbox
+        for msg in user.messages:
+            Message.delete(msg.id)
+
+        # delete user sessions
+        Session.terminate_user(user.username)
+
         super().delete('username', username)
 
     @classmethod
@@ -254,9 +286,10 @@ class Session(Model):
         :param ip: IP for which the session is valid
         :param user_agent: user agent for which the session is valid
         """
+        columns = 'id, username, expiry, ip, user_agent'
         super().insert(
-            columns='id, username, expiry, ip, user_agent',
-            keys=':id, :username, :expiry, :ip, :user_agent',
+            columns=columns,
+            keys=cols2keys(columns),
             values={
                 'id': session_id,
                 'username': username,
@@ -281,6 +314,20 @@ class Session(Model):
         return None
 
     @classmethod
+    def from_user(cls, username):
+        rows = super().select('username', username)
+        if rows:
+            return [Session(*row) for row in rows]
+        return []
+
+    @classmethod
+    def terminate_user(cls, username):
+        # https://youtu.be/ewZZNeYDiLo?t=32
+        for sesh in cls.from_user(username):
+            cls.delete(sesh.id)
+
+
+    @classmethod
     def delete(cls, session_id: str) -> None:
         """
         Delete the session row with the given ID
@@ -296,7 +343,7 @@ class Message(Model):
         self.id = id
         self.sender_name = sender_name
         self.recipient_name = recipient_name
-        self.date = date
+        self.date = dt.datetime.fromtimestamp(date).strftime('%Y-%m-%d %H:%M:%S')
         self.title = title
         self.body = body
 
@@ -349,12 +396,12 @@ class Message(Model):
     def from_recipient(cls, recipient_name):
         rows = super().select('recipient_name', recipient_name)
         if rows:
-            print(rows)
             return sorted(
                 [Message(*row) for row in rows],
-                key=lambda x: x.date
+                key=lambda x: x.date,
+                reverse=True
             )
-        return None
+        return []
 
     @classmethod
     def delete(cls, message_id: str) -> None:

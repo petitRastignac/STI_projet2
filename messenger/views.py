@@ -40,28 +40,29 @@ def current_user():
     return User.from_session(get_current_jwt()['session'])
 
 @APP.route('/')
-@is_logged_in
 def index():
-    user = current_user()
-
-    return render_template(
-        'index.html',
-        firstname=user.firstname,
-        user=user
-    )
+    return redirect('/inbox')
 
 @APP.route('/inbox')
 @is_logged_in
 def inbox():
+    user = current_user()
+
+    senders = {}
+    if user.messages:
+        for msg in user.messages:
+            senders[msg.sender_name] = '{}'.format(User.select(msg.sender_name))
+
     return render_template(
         'inbox.html',
         title='Inbox',
-        user=current_user()
+        user=user,
+        senders=senders
     )
 
-@APP.route('/newMessage', methods=['GET', 'POST'])
+@APP.route('/compose', methods=['GET', 'POST'])
 @is_logged_in
-def new_message():
+def compose(msg_title=None, msg_recipient=None):
     user = current_user()
 
     if request.method == 'POST':
@@ -95,15 +96,83 @@ def new_message():
             flash('Message successfully sent', 'alert-success')
 
     return render_template(
-        'newMessage.html',
+        'compose.html',
         title='New message',
-        user=user
+        user=user,
+        msg_title=msg_title,
+        msg_recipient=msg_recipient
     )
 
+@APP.route('/message/<string:message_id>')
+@is_logged_in
+def message_id(message_id):
+    user = current_user()
+
+    if len(message_id) > Model.TEXT_MAX_LEN:
+        flash('Bad message ID', 'alert-danger')
+        return redirect('/inbox')
+
+    message = Message.select(message_id)
+    if not message:
+        flash("Message doesn't exist", 'alert-danger')
+        return redirect('/inbox')
+    elif message.recipient_name != user.username:
+        flash("Can't view messages from other users", 'alert-danger')
+        return redirect('/inbox')
+
+    sender = '{}'.format(User.select(message.sender_name))
+
+    return render_template(
+        'message_id.html',
+        title=message.title,
+        user=user,
+        message=message,
+        sender=sender
+    )
+
+@APP.route('/message/<string:message_id>/reply')
+@is_logged_in
+def message_reply(message_id):
+    user = current_user()
+
+    if len(message_id) > Model.TEXT_MAX_LEN:
+        flash('Bad message ID', 'alert-danger')
+        return redirect('/inbox')
+
+    message = Message.select(message_id)
+    if not message:
+        flash("Message doesn't exist", 'alert-danger')
+        return redirect('/inbox')
+    elif message.recipient_name != user.username:
+        flash("Can't view messages from other users", 'alert-danger')
+        return redirect('/inbox')
+
+    return redirect('/compose?title={}&recipient={}'.format(
+        'Re: {}'.format(message.title),
+        message.sender_name
+    ))
+
 @APP.route('/message/<string:message_id>/delete')
+@is_logged_in
+def message_delete(message_id):
+    user = current_user()
+
+    if len(message_id) > Model.TEXT_MAX_LEN:
+        flash('Bad message ID', 'alert-danger')
+        return redirect('/inbox')
+
+    message = Message.select(message_id)
+    if not message:
+        flash("Message doesn't exist", 'alert-danger')
+    elif message.recipient_name != user.username:
+        flash("Can't delete messages from other users", 'alert-danger')
+    else:
+        Message.delete(message.id)
+        flash('Message successfully deleted', 'alert-success')
+
+    return redirect('/inbox')
 
 @APP.route('/admin')
-@is_logged_in
 @is_admin
 def admin():
     user = current_user()
@@ -111,6 +180,128 @@ def admin():
     return render_template(
         'admin.html',
         title='Administration',
+        user=user,
+        users=User.all()
+    )
+
+@APP.route('/user/<string:username>', methods=['GET', 'POST'])
+@is_admin
+def user_id(username):
+    user = current_user()
+
+    if len(username) > Model.TEXT_MAX_LEN:
+        flash('Bad username', 'alert-danger')
+        return redirect('/admin')
+
+    otheruser = User.select(username)
+    if not otheruser:
+        flash("User doesn't exist", 'alert-danger')
+        return redirect('/admin')
+
+    # handle incoming form
+    if request.method == 'POST':
+        # retrieve form data
+        args = {
+            'username': request.form.get('username', type=str),
+            'password': request.form.get('password', type=str),
+            'active': request.form.get('active', type=bool),
+            'admin': request.form.get('admin', type=bool),
+        }
+
+        # check if post username matches route
+        if args['username'] != username:
+            flash('Malformed request', 'alert-danger')
+            return redirect('/admin')
+        # prevent self corruption
+        elif args['username'] == user.username:
+            flash("Can't edit yourself !", 'alert-danger')
+            return redirect('/admin')
+
+        # create update dict
+        update_dict = {
+            'active': True if args['active'] else False,
+            'admin': True if args['admin'] else False
+        }
+        if args['password']:
+            update_dict['password'] = hash_pw(args['password'])
+
+        # patch user
+        User.update(args['username'], update_dict)
+        Session.terminate_user(args['username'])
+
+        flash('User successfully updated', 'alert-success')
+        return redirect('/admin')
+
+    return render_template(
+        'user_id.html',
+        title="Manager user '{}'".format(username),
+        user=user,
+        otheruser=otheruser
+    )
+
+@APP.route('/user/<string:username>/delete')
+@is_admin
+def user_delete(username):
+    user = current_user()
+
+    if len(username) > Model.TEXT_MAX_LEN:
+        flash('Bad username', 'alert-danger')
+        return redirect('/admin')
+
+    otheruser = User.select(username)
+    if not otheruser:
+        flash("User doesn't exist", 'alert-danger')
+        return redirect('/admin')
+
+    if username == user.username:
+        flash("Can't delete yourself !", 'alert-danger')
+        return redirect('/admin')
+
+    User.delete(username)
+    flash('User successfully deleted', 'alert-success')
+    return redirect('/admin')
+
+@APP.route('/userAdd', methods=['GET', 'POST'])
+@is_admin
+def user_add():
+    user = current_user()
+
+    # handle incoming form
+    if request.method == 'POST':
+        # retrieve form data
+        args = {
+            'firstname': request.form.get('firstname', type=str),
+            'lastname': request.form.get('lastname', type=str),
+            'username': request.form.get('username', type=str),
+            'password': request.form.get('password', type=str),
+            'password_confirm': request.form.get('password_confirm', type=str)
+        }
+
+        # check for valid data and no user conflicts
+        if any(x == None for x in args.values()):
+            flash('All fields are required', 'alert-danger')
+        elif any(len(x) > Model.TEXT_MAX_LEN for x in args.values()):
+            flash(
+                'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
+                'alert-danger'
+            )
+        elif args['password'] != args['password_confirm']:
+            flash("Passwords don't match", 'alert-danger')
+        elif User.find(args['username']):
+            flash('Username is already used', 'alert-danger')
+        else:
+            # create new account and redirect to login page
+            User.insert(
+                False,
+                args['firstname'], args['lastname'],
+                args['username'], hash_pw(args['password'])
+            )
+            flash('Account created successfully', 'alert-success')
+            return redirect('/admin')
+
+    return render_template(
+        'user_add.html',
+        title='Add new user',
         user=user
     )
 
@@ -143,7 +334,8 @@ def change_password():
         elif not check_pw(args['currentPassword'], user.password):
             flash('Current password is incorrect', 'alert-danger')
         else:
-            User.update(user.username, {'password': hash_pw(args['newPassword'])})
+            User.change_pass(user.username, args['newPassword'])
+
             flash('Password successfully changed', 'alert-success')
             return logout(False)
 
@@ -176,6 +368,8 @@ def login():
             )
         elif not (user and check_pw(args['password'], user.password)):
             flash('Bad credentials', 'alert-danger')
+        elif not user.active:
+            flash('Account disabled, please contact an administrator', 'alert-danger')
         else:
             # generate new session
             expiry = get_current_timestamp()

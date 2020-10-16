@@ -1,0 +1,49 @@
+<!-- ---------------------------
+Fichier :inbox.html
+Date : 14.10.2020
+But : Affiche les messages reçus
+Remarque :
+------------------------- -->
+{% extends 'base.html' %}
+{% block body %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col col-md-8 offset-md-2 mt-4">
+            <h2><b>{{ title }}</b></h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-dismissable {{ category }} fade show" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-label-hidden="true">&times;</span></button>{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-8 offset-md-2">
+            <i>Received from {{ sender }} on {{ message.date }}</i>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-8 offset-md-2">
+            {{ message.body }}
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-8 offset-md-2">
+            <a href="/inbox" class="btn btn-primary active" role="button" aria-pressed="true">
+                Back to inbox
+            </a>
+            <a href="/message/{{ message.id }}/reply" class="btn btn-primary active" role="button" aria-pressed="true">
+                Reply <i class="fas fa-reply"></i>
+            </a>
+            <a href="/message/{{ message.id }}/delete" class="btn btn-danger active" role="button" aria-pressed="true">
+                Delete <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

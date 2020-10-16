@@ -5,6 +5,7 @@ CWD = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.insert(0, os.path.dirname(CWD))
 
 from messenger.models import *
+from messenger.security import hash_pw
 
 # clean tables
 Session.drop_table()
@@ -17,8 +18,4 @@ Session.create_table()
 Message.create_table()
 
 # create one admin
-User.insert(
-  True,
-  args['admin'], args['admin'],
-  args['admin'], hash_pw(args['admin'])
-)
+User.insert(True, 'admin', 'admin', 'admin', hash_pw('admin'))
