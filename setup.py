@@ -8,6 +8,7 @@ setup(
     install_requires=[
         'flask',
         'flask-sqlalchemy',
+        'flask-scrypt',
         'pymysql',
     ],
     extras_require={
