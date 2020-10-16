@@ -1,7 +1,7 @@
 # ---------------------------
 #Fichier : models.py
 #Date : 14.10.2020
-#But :
+#But : implémentation de fonctions pour la gestion de la database
 #Remarque :
 #------------------------------
 
@@ -55,6 +55,14 @@ class Model(object):
 
     @classmethod
     def insert(cls, columns: str, keys: str, values: dict) -> None:
+        """
+        Execute a `INSERT INTO VALUES` command using the calling
+        classe's `__tablename__` table.
+
+        :param columns_stmt: SQL columns declaration
+        :param key: column identifier to use
+        :param value: value to insert
+        """
         stmt = DB.text('INSERT INTO {} ({}) VALUES ({})'.format(
             cls.__tablename__,
             columns,
@@ -196,6 +204,12 @@ class User(Model):
 
     @classmethod
     def update(cls, username, update_dict):
+        """
+        Update user with the given username
+
+        :param username: username to look for
+        :param update_dict: column and content to update
+        """
         super().update(update_dict, 'username', username)
 
     @classmethod
@@ -320,6 +334,15 @@ class Message(Model):
 
     @classmethod
     def insert(cls, sender_name, recipient_name, date, title, body) -> None:
+        """
+        Insert a new message
+
+        :param sender_name: username of the sender
+        :param recipient_name: username of the receiver
+        :param date: date when the message was sended
+        :param title: title of the message
+        :param body: the message itself
+        """
         columns = 'id, sender_name, recipient_name, date, title, body'
         super().insert(
             columns=columns,
@@ -333,6 +356,11 @@ class Message(Model):
 
     @classmethod
     def select(cls, message_id):
+        """
+        Select the message with the given ID
+
+        :param message_id: message ID to look for
+        """
         rows = super().select('id', message_id)
         if rows:
             return Message(*rows[0])
@@ -340,6 +368,11 @@ class Message(Model):
 
     @classmethod
     def from_sender(cls, sender_name):
+        """
+        Select all the messages sended by a user
+
+        :param sender_name: username of the sender
+        """
         rows = super().select('sender_name', sender_name)
         if rows:
             return [Message(*row) for row in rows]
@@ -347,6 +380,11 @@ class Message(Model):
 
     @classmethod
     def from_recipient(cls, recipient_name):
+        """
+        Select all the messages recived by a user
+
+        :param recipient_name: username of the receiver
+        """
         rows = super().select('recipient_name', recipient_name)
         if rows:
             print(rows)
