@@ -22,10 +22,10 @@ jobs:
 
       - name: Build application Docker image
         run: |
-          echo ${{ secrets.PAT }} | docker login ghcr.io -u Serphentas --password-stdin
+          echo ${{ secrets.token }} | docker login -u serphentas --password-stdin
           docker build -t sti-flask-ftw/sti-project-1/app .
-          docker tag sti-flask-ftw/sti-project-1/app ghcr.io/sti-flask-ftw/sti-project-1/app
-          docker push ghcr.io/sti-flask-ftw/sti-project-1/app
+          docker tag sti-flask-ftw/sti-project-1/app serphentas/sti-flask-ftw/sti-project-1/app
+          docker push serphentas/sti-flask-ftw/sti-project-1/app
 
       - name: Build database Docker image
         run: |
