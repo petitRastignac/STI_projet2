@@ -16,6 +16,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip
 
+      - uses: satackey/action-docker-layer-caching@v0.0.8
+        continue-on-error: true
+
       - uses: actions/setup-python@v2
         with:
             python-version: '3.8.6'

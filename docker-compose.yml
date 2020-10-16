@@ -1,7 +1,7 @@
 version: "3"
 services:
   uwsgi:
-    image: ghcr.io/sti-flask-ftw/sti-project-1/app
+    image: serphentas/sti-project-1-app
     container_name: sti_uwsgi
     restart: always
     ports:
@@ -13,7 +13,7 @@ services:
       - db
 
   db:
-    image: ghcr.io/sti-flask-ftw/sti-project-1/db
+    image: serphentas/sti-project-1-db
     container_name: sti_db
     restart: always
     ports:
