@@ -20,7 +20,7 @@ Remarque :
             <th scope="col">Date</th>
             <th scope="col">Expéditeur</th>
             <th scope="col">Sujet</th>
-            <th scope="col"></th>
+            <th scope="col">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -30,9 +30,9 @@ Remarque :
             <th style="width: 25%">Sujet1</th>
             <th style="width: 25%" class="btn-group">
                 {% for message in tableau}
-                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Répondre</a>
-                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Supprimer</a>
-                <a href="#" class="btn btn-secondary active" role="button" aria-pressed="true">Lire</a>
+                <i class="fas fa-pencil-alt">Répondre</i>
+                <i class="fas fa-pencil-alt">Supprimer</i>
+                <i class="fas fa-pencil-alt">Lire</i>
             </th>
         </tr>
     </tbody>
