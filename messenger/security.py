@@ -4,7 +4,7 @@
 #But :
 #Remarque :
 #------------------------------
-import random, string, base64, hmac
+import random, string, base64, hmac, re
 
 
 SCRYPT_N = 65536
@@ -30,6 +30,29 @@ def explode(hashstr):
     """
 
     return hashstr.split('$')
+
+def pw_complexity(password):
+    """
+    Checks the password complexity before using it
+
+    :param password: password to verify complexity
+    :returns: true if the password is complex enoughs, false otherwise
+    """
+    # Dans le cas d'un mot de passe inférieur à 8 caractères
+    if (len(password) < 8):
+        return False
+    # Dans le cas d'un mot de passe sans chiffre
+    if (re.search(r"\d", password) is None):
+        return False
+    # Dans le cas d'un mot de passe sans majuscule
+    if (re.search(r"[A-Z]", password) is None):
+        return False
+    # Dans le cas d'un mot de passe sans minuscule
+    if (re.search(r"[a-z]", password) is None):
+        return False
+
+    return True
+
 
 def hash_pw(password):
     """

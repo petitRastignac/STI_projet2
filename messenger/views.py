@@ -8,12 +8,19 @@
 import datetime as dt
 
 from flask import render_template, request, flash, redirect, make_response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from messenger import APP
 from messenger.models import User, Session, Message, Model, get_current_timestamp
-from messenger.security import check_pw, hash_pw, gen_rand_string
+from messenger.security import check_pw, hash_pw, gen_rand_string, pw_complexity
 from messenger.decorators import is_logged_in, is_admin
 from messenger.jwt import jwt_decode, jwt_encode, get_current_jwt
+
+limiter = Limiter(
+    APP,
+    key_func=get_remote_address
+)
 
 def current_user():
     # What is GEN ? Baby don't duplicate me, don't duplicate me, oh no
@@ -285,6 +292,8 @@ def user_add():
                 'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
                 'alert-danger'
             )
+        elif (pw_complexity(args['password']) == False):
+            flash("Password needs 8 characters minimum, with at least 1 digit, 1 minuscule and 1 majuscule.", 'alert-danger')
         elif args['password'] != args['password_confirm']:
             flash("Passwords don't match", 'alert-danger')
         elif User.find(args['username']):
@@ -329,6 +338,8 @@ def change_password():
             )
         elif args['newPassword'] != args['repeatPassword']:
             flash("New passwords don't match", 'alert-danger')
+        elif (pw_complexity(args['newPassword']) == False):
+            flash("Password needs 8 characters minimum, with at least 1 digit, 1 minuscule and 1 majuscule.", 'alert-danger')
         elif args['newPassword'] == args['currentPassword']:
             flash('New password is the same as the current one', 'alert-danger')
         elif not check_pw(args['currentPassword'], user.password):
@@ -346,6 +357,7 @@ def change_password():
     )
 
 @APP.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     # handle incoming form
     if request.method == 'POST':
@@ -435,6 +447,8 @@ def signup():
                 'Fields may not exceed {} characters'.format(Model.TEXT_MAX_LEN),
                 'alert-danger'
             )
+        elif (pw_complexity(args['password']) == False):
+            flash("Password needs 8 characters minimum, with at least 1 digit, 1 minuscule and 1 majuscule.", 'alert-danger')
         elif args['password'] != args['password_confirm']:
             flash("Passwords don't match", 'alert-danger')
         elif User.find(args['username']):

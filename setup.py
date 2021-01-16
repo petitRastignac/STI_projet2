@@ -9,6 +9,7 @@ setup(
         'flask',
         'flask-sqlalchemy',
         'pymysql',
+        'flask-limiter',
     ],
     extras_require={
         'staging': [
